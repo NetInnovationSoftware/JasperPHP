@@ -10,11 +10,12 @@ class JasperPHP
     protected $windows = false;
     protected $formats = array('pdf', 'rtf', 'xls', 'xlsx', 'docx', 'odt', 'ods', 'pptx', 'csv', 'html', 'xhtml', 'xml', 'jrprint');
     protected $resource_directory; // Path to report resource dir or jar file
+    protected $enable_assistive_technologies = true;
 
-    function __construct($resource_dir = false)
+    function __construct($resource_dir = false, $enable_assistive_technologies = true)
     {
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN')
-           $this->windows = true;
+            $this->windows = true;
 
         if (!$resource_dir) {
             $this->resource_directory = __DIR__ . "/../../../../../";
@@ -24,6 +25,7 @@ class JasperPHP
 
             $this->resource_directory = $resource_dir;
         }
+        $this->enable_assistive_technologies = $enable_assistive_technologies;
     }
 
     public static function __callStatic($method, $parameters)
@@ -70,7 +72,7 @@ class JasperPHP
             }
         } else {
             if( !in_array($format, $this->formats))
-                    throw new \Exception("Invalid format!", 1);
+                throw new \Exception("Invalid format!", 1);
         }
 
         $command = __DIR__ . $this->executable;
@@ -127,7 +129,7 @@ class JasperPHP
             if( isset($db_connection['jdbc_url']) && !empty($db_connection['jdbc_url']) )
                 $command .= " --db-url " . $db_connection['jdbc_url'];
 
-            if ( isset($db_connection['jdbc_dir']) && !empty($db_connection['jdbc_dir']) ) 
+            if ( isset($db_connection['jdbc_dir']) && !empty($db_connection['jdbc_dir']) )
                 $command .= ' --jdbc-dir ' . $db_connection['jdbc_dir'];
 
             if ( isset($db_connection['db_sid']) && !empty($db_connection['db_sid']) )
@@ -179,6 +181,10 @@ class JasperPHP
 
         if( $run_as_user !== false && strlen($run_as_user) > 0 && !$this->windows )
             $this->the_command = "su -c \"{$this->the_command}\" {$run_as_user}";
+
+        if (!$this->enable_assistive_technologies) {
+            $this->the_command = "export _JAVA_OPTIONS='-Djavax.accessibility.assistive_technologies= ' && " . $this->the_command;
+        }
 
         $output     = array();
         $return_var = 0;
